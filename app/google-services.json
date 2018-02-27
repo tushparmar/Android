@@ -1,0 +1,99 @@
+{
+  "project_info": {
+    "project_number": "23425850120",
+    "firebase_url": "https://orderfood-16c93.firebaseio.com",
+    "project_id": "orderfood-16c93",
+    "storage_bucket": "orderfood-16c93.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:23425850120:android:fd155a5022eb5fb5",
+        "android_client_info": {
+          "package_name": "com.orderfood.tusharparmar.orderfood"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "23425850120-ff34tbmeoht82vfe6p6ehrp4i1ta998d.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.orderfood.tusharparmar.orderfood",
+            "certificate_hash": "74c49c6f70c09135ee592cd7dc0bd92bb5ed9200"
+          }
+        },
+        {
+          "client_id": "23425850120-9jc468nothiss33iak7mkh8nop3hth0i.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCySDmFE7jysC7WI6F7QwYXZysfyaFcGXw"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "23425850120-9jc468nothiss33iak7mkh8nop3hth0i.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:23425850120:android:c4e66a346b823729",
+        "android_client_info": {
+          "package_name": "com.orderfood.tusharparmar.orderfoodclient"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "23425850120-brpsfbckr4j5vthb05d5gcg1v804t5sb.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.orderfood.tusharparmar.orderfoodclient",
+            "certificate_hash": "74c49c6f70c09135ee592cd7dc0bd92bb5ed9200"
+          }
+        },
+        {
+          "client_id": "23425850120-9jc468nothiss33iak7mkh8nop3hth0i.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCySDmFE7jysC7WI6F7QwYXZysfyaFcGXw"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "23425850120-9jc468nothiss33iak7mkh8nop3hth0i.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">OrderFoodClient</string>
+    <string name="facebook_application_id" translatable="false">161586487970933</string>
+    <string name="fb_login_protocol_scheme" translatable="false">fb161586487970933</string>
+    <!--<string name="default_web_client_id" translatable="false">133341366107-d5jgpeo6be1g1p3flm7if9npuv1ik1kj.apps.googleusercontent.com</string>-->
+    <string name="menu_title">Menu</string>
+    <string name="title_activity_main2">Main2Activity</string>
+
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+
+    <string name="action_settings">Settings</string>
+</resources>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#ec1a63</color>
+    <color name="colorPrimaryDark">#d31d5c</color>
+    <color name="colorAccent">#ec1a63</color>
+    <color name="colorAccentSocial">#ffffff</color>
+    <color name="colorAccentFB">#3c5a99</color>
+    <color name="colorAccentGoogle">#737373</color>
+</resources>

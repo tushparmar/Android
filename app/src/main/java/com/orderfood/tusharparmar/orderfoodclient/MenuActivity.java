@@ -1,8 +1,10 @@
 package com.orderfood.tusharparmar.orderfoodclient;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.support.annotation.NonNull;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
@@ -39,11 +41,12 @@ public class MenuActivity extends AppCompatActivity {
         mAuthStateListener = new FirebaseAuth.AuthStateListener() {
             @Override
             public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
-                /*if (mAuth.getCurrentUser() == null) {
+                if (firebaseAuth.getCurrentUser() == null) {
                     Intent loginIntent = new Intent(MenuActivity.this, LoginActivity.class);
                     loginIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
                     startActivity(loginIntent);
-                }*/
+                    finish();
+                }
             }
         };
     }
@@ -70,7 +73,15 @@ public class MenuActivity extends AppCompatActivity {
     }
 
     public void btnSignOutClicked(View view) {
-        logoutUser();
+        new AlertDialog.Builder(this)
+                .setTitle("Sign Out?")
+                .setMessage("Are you sure you want sign out?")
+                .setNegativeButton(android.R.string.no, null)
+                .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface arg0, int arg1) {
+                        logoutUser();
+                    }
+                }).create().show();
     }
 
     public static class MenuItemViewHolder extends RecyclerView.ViewHolder{
@@ -107,5 +118,20 @@ public class MenuActivity extends AppCompatActivity {
         Intent loginIntent = new Intent(MenuActivity.this,LoginActivity.class);
         loginIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(loginIntent);
+        finish();
+    }
+
+    @Override
+    public void onBackPressed() {
+        new AlertDialog.Builder(this)
+                .setTitle("Really Exit?")
+                .setMessage("Are you sure you want to exit?")
+                .setNegativeButton(android.R.string.no, null)
+                .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface arg0, int arg1) {
+                        MenuActivity.this.finish();
+                        MenuActivity.super.onBackPressed();
+                    }
+                }).create().show();
     }
 }

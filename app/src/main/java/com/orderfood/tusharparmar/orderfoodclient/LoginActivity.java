@@ -47,8 +47,8 @@ import java.util.Arrays;
 
 public class LoginActivity extends AppCompatActivity {
     EditText email, password;
-    LoginButton loginButtonFB;
-    ImageView loginButtonFBImg;
+    /*LoginButton loginButtonFB;
+    ImageView loginButtonFBImg;*/
     FirebaseAuth mAuth;
     DatabaseReference mDB;
     private static final int RC_SIGN_IN_GOOGLE = 123;
@@ -62,42 +62,11 @@ public class LoginActivity extends AppCompatActivity {
         getSupportActionBar().hide();
         setContentView(R.layout.activity_login);
 
-        mCallbackManager = CallbackManager.Factory.create();
         email = findViewById(R.id.userEmail);
         password = findViewById(R.id.userPassword);
 
-
         mAuth = FirebaseAuth.getInstance();
-
         mDB = FirebaseDatabase.getInstance().getReference().child("users");
-
-        loginButtonFBImg = findViewById(R.id.login_button_img);
-        loginButtonFB = (LoginButton) findViewById(R.id.login_button);
-        loginButtonFB.setReadPermissions(Arrays.asList(EMAIL));
-        loginButtonFB.registerCallback(mCallbackManager, new FacebookCallback<LoginResult>() {
-            @Override
-            public void onSuccess(LoginResult loginResult) {
-                Intent menuIntent = new Intent(LoginActivity.this,MenuActivity.class);
-                startActivity(menuIntent);
-                /*handleFacebookAccessToken(loginResult.getAccessToken());*/
-            }
-
-            @Override
-            public void onCancel() {
-                Toast.makeText(LoginActivity.this,"Facebook login cancelled.", Toast.LENGTH_LONG);
-            }
-
-            @Override
-            public void onError(FacebookException exception) {
-                Toast.makeText(LoginActivity.this,"Facebook login failed!!!", Toast.LENGTH_LONG);
-            }
-        });
-    }
-
-    @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        mCallbackManager.onActivityResult(requestCode, resultCode, data);
-        super.onActivityResult(requestCode, resultCode, data);
     }
 
     public void btnSignInClicked(View view) {
@@ -125,7 +94,9 @@ public class LoginActivity extends AppCompatActivity {
                 if(dataSnapshot.hasChild(userId))
                 {
                     Intent menuIntent = new Intent(LoginActivity.this,MenuActivity.class);
+                    menuIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
                     startActivity(menuIntent);
+                    LoginActivity.this.finish();
                 }
             }
 
@@ -136,25 +107,15 @@ public class LoginActivity extends AppCompatActivity {
         });
     }
 
-    private void handleFacebookAccessToken(AccessToken token) {
-        AuthCredential credential = FacebookAuthProvider.getCredential(token.getToken());
-        mAuth.signInWithCredential(credential)
-                .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
-                    @Override
-                    public void onComplete(@NonNull Task<AuthResult> task) {
-                        if (task.isSuccessful()) {
-                            FirebaseUser user = mAuth.getCurrentUser();
-                            Intent menuIntent = new Intent(LoginActivity.this,MenuActivity.class);
-                            startActivity(menuIntent);
-                        } else {
-                            Toast.makeText(LoginActivity.this, "Authentication failed.",
-                                    Toast.LENGTH_SHORT).show();
-                        }
-                    }
-                });
+    @Override
+    public void onBackPressed() {
+        finish();
     }
 
-    public void btnFBSignInClicked(View view) {
-        loginButtonFB.performClick();
+    public void txtSignUpClicked(View view) {
+        Intent mainIntent = new Intent(LoginActivity.this,MainActivity.class);
+        mainIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(mainIntent);
+        finish();
     }
 }

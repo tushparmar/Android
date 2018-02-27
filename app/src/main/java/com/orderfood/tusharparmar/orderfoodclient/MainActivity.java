@@ -21,6 +21,7 @@ public class MainActivity extends AppCompatActivity {
     EditText email, password, passwordConf;
     DatabaseReference mDB;
     FirebaseAuth mAuth;
+    FirebaseAuth.AuthStateListener mAuthStateListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,6 +35,24 @@ public class MainActivity extends AppCompatActivity {
 
         mAuth = FirebaseAuth.getInstance();
         mDB = FirebaseDatabase.getInstance().getReference().child("users");
+
+        mAuthStateListener = new FirebaseAuth.AuthStateListener() {
+            @Override
+            public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
+                if (firebaseAuth.getCurrentUser() != null) {
+                    Intent menuIntent = new Intent(MainActivity.this, MenuActivity.class);
+                    menuIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    startActivity(menuIntent);
+                    finish();
+                }
+            }
+        };
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        mAuth.addAuthStateListener(mAuthStateListener);
     }
 
 
@@ -53,7 +72,9 @@ public class MainActivity extends AppCompatActivity {
                         currentUser.child("Email").setValue(strEmail);
 
                         Intent intent = new Intent(MainActivity.this, MenuActivity.class);
+                        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
                         startActivity(intent);
+                        finish();
                     }
                 }
             });
@@ -79,6 +100,13 @@ public class MainActivity extends AppCompatActivity {
 
     public void btnSignInClicked(View view) {
         Intent intent = new Intent(MainActivity.this, LoginActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
+        finish();
+    }
+
+    @Override
+    public void onBackPressed() {
+        finish();
     }
 }

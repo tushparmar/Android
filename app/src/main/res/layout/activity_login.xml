@@ -99,12 +99,23 @@
         android:id="@+id/textView2"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignTop="@+id/btnSignIn"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="66dp"
+        android:layout_below="@+id/btnSignIn"
+        android:layout_marginTop="15dp"
+        android:layout_toStartOf="@+id/login_button_img"
         android:text="Forgot password?"
         android:textAlignment="center"
         android:textColor="#FFFFFF" />
+
+    <TextView
+        android:id="@+id/textView4"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/textView3"
+        android:layout_toEndOf="@+id/imageView"
+        android:text="Sign Up?"
+        android:textAlignment="center"
+        android:textColor="#FFFFFF"
+        android:onClick="txtSignUpClicked"/>
 
     <TextView
         android:id="@+id/textView3"
@@ -124,8 +135,8 @@
         android:layout_alignStart="@+id/imageView"
         android:layout_below="@+id/textView3"
         android:layout_marginTop="18dp"
-        app:srcCompat="@drawable/fui_ic_googleg_color_24dp"
-        android:onClick="btnGSignInClicked"/>
+        app:srcCompat="@drawable/fui_ic_googleg_color_24dp"/>
+        <!--android:onClick="btnGSignInClicked"-->
 
     <ImageView
         android:id="@+id/login_button_img"
@@ -133,8 +144,9 @@
         android:layout_height="35dp"
         android:layout_alignEnd="@+id/textView3"
         android:layout_alignTop="@+id/sign_in_button_img"
-        android:onClick="btnFBSignInClicked"
         app:srcCompat="@drawable/com_facebook_button_icon_blue" />
+        <!--android:onClick="btnFBSignInClicked"-->
+
 
     <!--<android.support.v7.widget.CardView
         android:id="@+id/sign_in_button"

@@ -125,8 +125,8 @@
         android:layout_height="35dp"
         android:layout_alignEnd="@+id/textView3"
         android:layout_alignTop="@+id/sign_in_button_img"
-        app:srcCompat="@drawable/com_facebook_button_icon_blue" />
-        <!--android:onClick="btnFBSignInClicked"-->
+        app:srcCompat="@drawable/com_facebook_button_icon_blue"
+        android:onClick="imgFBSignInClicked"/>
 
 
     <!--<android.support.v7.widget.CardView

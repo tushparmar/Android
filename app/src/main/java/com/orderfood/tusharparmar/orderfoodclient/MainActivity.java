@@ -13,6 +13,7 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
@@ -36,7 +37,7 @@ public class MainActivity extends AppCompatActivity {
         mAuth = FirebaseAuth.getInstance();
         mDB = FirebaseDatabase.getInstance().getReference().child("users");
 
-        mAuthStateListener = new FirebaseAuth.AuthStateListener() {
+        /*mAuthStateListener = new FirebaseAuth.AuthStateListener() {
             @Override
             public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
                 if (firebaseAuth.getCurrentUser() != null) {
@@ -46,13 +47,14 @@ public class MainActivity extends AppCompatActivity {
                     finish();
                 }
             }
-        };
+        };*/
     }
 
     @Override
     protected void onStart() {
         super.onStart();
-        mAuth.addAuthStateListener(mAuthStateListener);
+        updateUI(mAuth.getCurrentUser());
+        //mAuth.addAuthStateListener(mAuthStateListener);
     }
 
 
@@ -108,5 +110,14 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onBackPressed() {
         finish();
+    }
+
+    private void updateUI(FirebaseUser user) {
+        if (user != null) {
+            Intent menuIntent = new Intent(MainActivity.this,MenuActivity.class);
+            menuIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(menuIntent);
+            MainActivity.this.finish();
+        }
     }
 }

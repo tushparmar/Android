@@ -65,6 +65,7 @@ public class LoginActivity extends AppCompatActivity {
     ImageView imgGSignIn;
     LoginButton btnFBSignIn;
     ImageView imgFBSignIn;
+    Button btnSignIn;
     private static final int RC_SIGN_IN_GOOGLE = 2;
     private static final int RC_SIGN_IN_FB = 3;
     CallbackManager mCallbackManager;
@@ -89,7 +90,6 @@ public class LoginActivity extends AppCompatActivity {
 
         initGoogleSignIn();
         initFacebookSignIn();
-        //initAuthStateListener();
     }
 
     @Override
@@ -97,7 +97,6 @@ public class LoginActivity extends AppCompatActivity {
         super.onStart();
         if(failedCredentials == null)
             updateUI(mAuth.getCurrentUser());
-        //mAuth.addAuthStateListener(mAuthStateListener);
     }
 
     @Override
@@ -122,18 +121,32 @@ public class LoginActivity extends AppCompatActivity {
         String strPassword = password.getText().toString().trim();
 
         if(!TextUtils.isEmpty(strEmail) && !TextUtils.isEmpty(strPassword)) {
-            mAuth.signInWithEmailAndPassword(strEmail, strPassword).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
-                @Override
-                public void onComplete(@NonNull Task<AuthResult> task) {
-                    if (task.isSuccessful()) {
-                        if(failedCredentials != null)
-                            linkProvidersAndSignIn();
-                        else
-                            updateUI(mAuth.getCurrentUser());
-                    }
-                }
-            });
+            AuthCredential credential = EmailAuthProvider.getCredential(strEmail, strPassword);
+            if(failedCredentials == null)
+            {
+                isProviderRegistered(credential, strEmail, strPassword, EmailAuthProvider.PROVIDER_ID);
+            }
+            else {
+                signInWithEmailPass(strEmail, strPassword);
+            }
         }
+    }
+
+    private void signInWithEmailPass(String strEmail, String strPassword)
+    {
+        mProgressDialog.setMessage("Signing In...");
+        mProgressDialog.show();
+        mAuth.signInWithEmailAndPassword(strEmail, strPassword).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
+            @Override
+            public void onComplete(@NonNull Task<AuthResult> task) {
+                if (task.isSuccessful()) {
+                    if (failedCredentials != null)
+                        linkProvidersAndSignIn();
+                    else
+                        updateUI(mAuth.getCurrentUser());
+                }
+            }
+        });
     }
 
     private void initGoogleSignIn()
@@ -154,19 +167,27 @@ public class LoginActivity extends AppCompatActivity {
 
     private void googleSignIn() {
         Intent signInIntent = mGoogleSignInClient.getSignInIntent();
+        if(GoogleSignIn.getLastSignedInAccount(LoginActivity.this) != null)
+        {
+            mGoogleSignInClient.signOut();
+        }
         startActivityForResult(signInIntent, RC_SIGN_IN_GOOGLE);
     }
 
     private void firebaseAuthWithGoogle(GoogleSignInAccount acct) {
+        mProgressDialog.setMessage("Signing In...");
+        mProgressDialog.show();
         AuthCredential credential = GoogleAuthProvider.getCredential(acct.getIdToken(), null);
         if(failedCredentials == null)
-            isProviderRegistered(credential, acct.getEmail(),GoogleAuthProvider.PROVIDER_ID);
+            isProviderRegistered(credential, acct.getEmail(), null, GoogleAuthProvider.PROVIDER_ID);
         else
             signInWithGoogle(credential);
     }
 
     private void signInWithGoogle(AuthCredential credential)
     {
+        mProgressDialog.setMessage("Signing In...");
+        mProgressDialog.show();
         mAuth.signInWithCredential(credential)
                 .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
                     @Override
@@ -284,9 +305,11 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void handleFacebookAccessToken(AccessToken token,final String[] fbEmail,final String[] fbUserId) {
+        mProgressDialog.setMessage("Signing In...");
+        mProgressDialog.show();
         final AuthCredential credential = FacebookAuthProvider.getCredential(token.getToken());
         if(failedCredentials == null)
-            isProviderRegistered(credential, fbEmail[0],FacebookAuthProvider.PROVIDER_ID);
+            isProviderRegistered(credential, fbEmail[0], null, FacebookAuthProvider.PROVIDER_ID);
         else
             signInWithFB(credential);
     }
@@ -338,9 +361,6 @@ public class LoginActivity extends AppCompatActivity {
             startActivity(menuIntent);
             failedCredentials = null;
             LoginActivity.this.finish();
-        } else {
-            Toast.makeText(LoginActivity.this, "User is null",
-                    Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -368,33 +388,34 @@ public class LoginActivity extends AppCompatActivity {
         });
     }
 
-    private void isProviderRegistered(final AuthCredential credential, final String email, final String providerId)
+    private void isProviderRegistered(final AuthCredential credential, final String email, final String password, final String providerId)
     {
         mAuth.fetchProvidersForEmail(email).addOnCompleteListener(new OnCompleteListener<ProviderQueryResult>() {
             @Override
             public void onComplete(@NonNull Task<ProviderQueryResult> task) {
                 final List<String> providers = task.getResult().getProviders();
-                if(providers.size() > 0) {
-                    if (!providers.contains(providerId))
-                    {
-                        new AlertDialog.Builder(LoginActivity.this)
-                                .setTitle("Email already registered.")
-                                .setMessage("Please login using original method to link accounts.")
-                                .setNegativeButton(android.R.string.cancel, null)
-                                .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-                                    public void onClick(DialogInterface arg0, int arg1) {
-                                        failedCredentials = credential;
-                                        if(providers.contains(GoogleAuthProvider.PROVIDER_ID)) {
-                                            googleSignIn();
-                                        }
-                                        else if(providers.contains(FacebookAuthProvider.PROVIDER_ID))
-                                        {
-                                            LoginManager.getInstance().logOut();
-                                            btnFBSignIn.performClick();
-                                        }
+                if(providers.size() > 0 && !providers.contains(providerId)) {
+                    new AlertDialog.Builder(LoginActivity.this)
+                            .setTitle("Email already registered.")
+                            .setMessage("Please login using original method to link accounts.")
+                            .setNegativeButton(android.R.string.cancel, null)
+                            .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                                public void onClick(DialogInterface arg0, int arg1) {
+                                    failedCredentials = credential;
+                                    if(providers.contains(GoogleAuthProvider.PROVIDER_ID)) {
+                                        googleSignIn();
                                     }
-                                }).create().show();
-                    }
+                                    else if(providers.contains(FacebookAuthProvider.PROVIDER_ID))
+                                    {
+                                        LoginManager.getInstance().logOut();
+                                        btnFBSignIn.performClick();
+                                    }
+                                    else if(providers.contains(EmailAuthProvider.PROVIDER_ID))
+                                    {
+                                        findViewById(R.id.btnSignIn).performClick();
+                                    }
+                                }
+                            }).create().show();
                 }
                 else
                 {
@@ -405,6 +426,10 @@ public class LoginActivity extends AppCompatActivity {
                     else if(GoogleAuthProvider.PROVIDER_ID.equals(providerId))
                     {
                         signInWithGoogle(credential);
+                    }
+                    else if(EmailAuthProvider.PROVIDER_ID.equals(providerId))
+                    {
+                        signInWithEmailPass(email, password);
                     }
                 }
             }

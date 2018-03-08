@@ -1,5 +1,6 @@
 package com.orderfood.tusharparmar.orderfoodclient;
 
+import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.support.annotation.NonNull;
@@ -22,6 +23,7 @@ import com.facebook.FacebookCallback;
 import com.facebook.FacebookException;
 import com.facebook.GraphRequest;
 import com.facebook.GraphResponse;
+import com.facebook.login.LoginManager;
 import com.facebook.login.LoginResult;
 import com.facebook.login.widget.LoginButton;
 import com.firebase.ui.auth.AuthUI;
@@ -54,6 +56,7 @@ import com.google.firebase.database.ValueEventListener;
 import org.json.JSONObject;
 
 import java.util.Arrays;
+import java.util.List;
 
 public class LoginActivity extends AppCompatActivity {
     EditText email, password;
@@ -69,6 +72,7 @@ public class LoginActivity extends AppCompatActivity {
     GoogleSignInClient mGoogleSignInClient;
     FirebaseAuth.AuthStateListener mAuthStateListener;
     AuthCredential failedCredentials;
+    private ProgressDialog mProgressDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -78,85 +82,22 @@ public class LoginActivity extends AppCompatActivity {
 
         mAuth = FirebaseAuth.getInstance();
         mDB = FirebaseDatabase.getInstance().getReference().child("users");
+        mProgressDialog = new ProgressDialog(LoginActivity.this);
 
         email = findViewById(R.id.userEmail);
         password = findViewById(R.id.userPassword);
 
-        imgGSignIn = findViewById(R.id.sign_in_button_img);
-        imgGSignIn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                googleSignIn();
-            }
-        });
-        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                .requestIdToken(getString(R.string.default_web_client_id))
-                .requestEmail()
-                .build();
-        mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
-
-
-        mCallbackManager = CallbackManager.Factory.create();
-        imgFBSignIn = findViewById(R.id.login_button_img);
-        btnFBSignIn = (LoginButton) findViewById(R.id.login_button);
-        btnFBSignIn.setReadPermissions(Arrays.asList(EMAIL));
-        btnFBSignIn.registerCallback(mCallbackManager, new FacebookCallback<LoginResult>() {
-            @Override
-            public void onSuccess(LoginResult loginResult) {
-                final String[] fbEmail = new String[1];
-                final String[] fbUserId = new String[1];
-                GraphRequest request = GraphRequest.newMeRequest(
-                        loginResult.getAccessToken(), new GraphRequest.GraphJSONObjectCallback() {
-                            @Override
-                            public void onCompleted(JSONObject me, GraphResponse response) {
-                                /*if (response.getError() != null) {
-                                } else {*/
-                                    fbEmail[0] = me.optString("email");
-                                    fbUserId[0] = me.optString("id");
-                                //}
-                                System.out.println("######## " + me.toString());
-                            }
-                        });
-                Bundle parameters = new Bundle();
-                parameters.putString("fields", "id,name,email");
-                request.setParameters(parameters);
-                request.executeAsync();
-                handleFacebookAccessToken(loginResult.getAccessToken(),fbEmail,fbUserId);
-            }
-
-            @Override
-            public void onCancel() {
-                Toast.makeText(LoginActivity.this,"Facebook login cancelled.", Toast.LENGTH_LONG);
-            }
-
-            @Override
-            public void onError(FacebookException exception) {
-                Toast.makeText(LoginActivity.this,"Facebook login failed!!!", Toast.LENGTH_LONG);
-            }
-        });
-
-        mAuthStateListener = new FirebaseAuth.AuthStateListener() {
-            @Override
-            public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
-                if(firebaseAuth.getCurrentUser() != null) {
-                    Intent menuIntent = new Intent(LoginActivity.this, MenuActivity.class);
-                    menuIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                    startActivity(menuIntent);
-                    LoginActivity.this.finish();
-                }
-            }
-        };
+        initGoogleSignIn();
+        initFacebookSignIn();
+        //initAuthStateListener();
     }
 
     @Override
     public void onStart() {
         super.onStart();
-        mAuth.addAuthStateListener(mAuthStateListener);
-    }
-
-    private void googleSignIn() {
-        Intent signInIntent = mGoogleSignInClient.getSignInIntent();
-        startActivityForResult(signInIntent, RC_SIGN_IN_GOOGLE);
+        if(failedCredentials == null)
+            updateUI(mAuth.getCurrentUser());
+        //mAuth.addAuthStateListener(mAuthStateListener);
     }
 
     @Override
@@ -176,32 +117,6 @@ public class LoginActivity extends AppCompatActivity {
         }
     }
 
-    private void firebaseAuthWithGoogle(GoogleSignInAccount acct) {
-        AuthCredential credential = GoogleAuthProvider.getCredential(acct.getIdToken(), null);
-        mAuth.signInWithCredential(credential)
-                .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
-                    @Override
-                    public void onComplete(@NonNull Task<AuthResult> task) {
-                        if (task.isSuccessful()) {
-                            if(failedCredentials != null)
-                            {
-                                mAuth.getCurrentUser().linkWithCredential(failedCredentials).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
-                                    @Override
-                                    public void onComplete(@NonNull Task<AuthResult> task) {
-                                        Toast.makeText(LoginActivity.this, "Accounts linked.",
-                                                Toast.LENGTH_SHORT).show();
-                                    }
-                                });
-                            }
-                            checkUserExists();
-                        } else {
-                            Toast.makeText(LoginActivity.this, "Authentication failed.",
-                                    Toast.LENGTH_SHORT).show();
-                        }
-                    }
-                });
-    }
-
     public void btnSignInClicked(View view) {
         String strEmail = email.getText().toString().trim();
         String strPassword = password.getText().toString().trim();
@@ -211,26 +126,125 @@ public class LoginActivity extends AppCompatActivity {
                 @Override
                 public void onComplete(@NonNull Task<AuthResult> task) {
                     if (task.isSuccessful()) {
-                        checkUserExists();
+                        if(failedCredentials != null)
+                            linkProvidersAndSignIn();
+                        else
+                            updateUI(mAuth.getCurrentUser());
                     }
                 }
             });
         }
     }
 
-    private void handleFacebookAccessToken(AccessToken token,final String[] fbEmail,final String[] fbUserId) {
-        final AuthCredential credential = FacebookAuthProvider.getCredential(token.getToken());
+    private void initGoogleSignIn()
+    {
+        imgGSignIn = findViewById(R.id.sign_in_button_img);
+        imgGSignIn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                googleSignIn();
+            }
+        });
+        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestIdToken(getString(R.string.default_web_client_id))
+                .requestEmail()
+                .build();
+        mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
+    }
 
+    private void googleSignIn() {
+        Intent signInIntent = mGoogleSignInClient.getSignInIntent();
+        startActivityForResult(signInIntent, RC_SIGN_IN_GOOGLE);
+    }
+
+    private void firebaseAuthWithGoogle(GoogleSignInAccount acct) {
+        AuthCredential credential = GoogleAuthProvider.getCredential(acct.getIdToken(), null);
+        if(failedCredentials == null)
+            isProviderRegistered(credential, acct.getEmail(),GoogleAuthProvider.PROVIDER_ID);
+        else
+            signInWithGoogle(credential);
+    }
+
+    private void signInWithGoogle(AuthCredential credential)
+    {
+        mAuth.signInWithCredential(credential)
+                .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
+                    @Override
+                    public void onComplete(@NonNull Task<AuthResult> task) {
+                        if (task.isSuccessful()) {
+                            if(failedCredentials != null)
+                                linkProvidersAndSignIn();
+                            else
+                                updateUI(mAuth.getCurrentUser());
+                        } else {
+                            Toast.makeText(LoginActivity.this, "Authentication failed.",
+                                    Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                });
+    }
+
+    private void initFacebookSignIn()
+    {
+        mCallbackManager = CallbackManager.Factory.create();
+        imgFBSignIn = findViewById(R.id.login_button_img);
+        btnFBSignIn = (LoginButton) findViewById(R.id.login_button);
+        btnFBSignIn.setReadPermissions(Arrays.asList(EMAIL));
+        btnFBSignIn.registerCallback(mCallbackManager, new FacebookCallback<LoginResult>() {
+            @Override
+            public void onSuccess(final LoginResult loginResult) {
+                final String[] fbEmail = new String[1];
+                final String[] fbUserId = new String[1];
+                GraphRequest request = GraphRequest.newMeRequest(
+                        loginResult.getAccessToken(), new GraphRequest.GraphJSONObjectCallback() {
+                            @Override
+                            public void onCompleted(JSONObject me, GraphResponse response) {
+                                /*if (response.getError() != null) {
+                                } else {*/
+                                fbEmail[0] = me.optString("email");
+                                fbUserId[0] = me.optString("id");
+                                handleFacebookAccessToken(loginResult.getAccessToken(),fbEmail,fbUserId);
+                                //}
+                                System.out.println("######## " + me.toString());
+                            }
+                        });
+                Bundle parameters = new Bundle();
+                parameters.putString("fields", "id,name,email");
+                request.setParameters(parameters);
+                request.executeAsync();
+            }
+
+            @Override
+            public void onCancel() {
+                Toast.makeText(LoginActivity.this,"Facebook login cancelled.", Toast.LENGTH_LONG);
+            }
+
+            @Override
+            public void onError(FacebookException exception) {
+                Toast.makeText(LoginActivity.this,"Facebook login failed!!!", Toast.LENGTH_LONG);
+            }
+        });
+    }
+
+    public void imgFBSignInClicked(View view) {
+        LoginManager.getInstance().logOut();
+        btnFBSignIn.performClick();
+    }
+
+    private void signInWithFB(AuthCredential credential)
+    {
         mAuth.signInWithCredential(credential)
                 .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
                     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
                     @Override
                     public void onComplete(@NonNull Task<AuthResult> task) {
                         if (task.isSuccessful()) {
-                            checkUserExists();
+                            if(failedCredentials != null)
+                                linkProvidersAndSignIn();
+                            else
+                                updateUI(mAuth.getCurrentUser());
                         } else {
-                            if(task.getException() instanceof FirebaseAuthUserCollisionException)
-                            {
+                            /*if (task.getException() instanceof FirebaseAuthUserCollisionException) {
                                 mAuth.fetchProvidersForEmail(fbEmail[0])
                                         .addOnCompleteListener(new OnCompleteListener<ProviderQueryResult>() {
                                             @Override
@@ -248,31 +262,53 @@ public class LoginActivity extends AppCompatActivity {
                                                                 if (task.isSuccessful()) {
                                                                     // Link initial credential to existing account.
                                                                     mAuth.getCurrentUser().linkWithCredential(credential);
-                                                                    checkUserExists();
+                                                                    updateUI(mAuth.getCurrentUser());
                                                                 }
                                                             }
                                                         });
-                                                    }
-                                                    else if(task.getResult().getProviders().contains(
-                                                            GoogleAuthProvider.PROVIDER_ID))
-                                                    {
+                                                    } else if (task.getResult().getProviders().contains(
+                                                            GoogleAuthProvider.PROVIDER_ID)) {
                                                         failedCredentials = credential;
                                                         googleSignIn();
                                                     }
                                                 }
                                             }
                                         });
-                            }
-                            else {
+                            } else {
                                 Toast.makeText(LoginActivity.this, "Authentication failed.",
                                         Toast.LENGTH_SHORT).show();
-                            }
+                            }*/
                         }
                     }
                 });
     }
 
-    private void checkUserExists()
+    private void handleFacebookAccessToken(AccessToken token,final String[] fbEmail,final String[] fbUserId) {
+        final AuthCredential credential = FacebookAuthProvider.getCredential(token.getToken());
+        if(failedCredentials == null)
+            isProviderRegistered(credential, fbEmail[0],FacebookAuthProvider.PROVIDER_ID);
+        else
+            signInWithFB(credential);
+    }
+
+    private void initAuthStateListener()
+    {
+        mAuthStateListener = new FirebaseAuth.AuthStateListener() {
+            @Override
+            public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
+                if(firebaseAuth.getCurrentUser() != null) {
+                    Intent menuIntent = new Intent(LoginActivity.this, MenuActivity.class);
+                    menuIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    startActivity(menuIntent);
+                    LoginActivity.this.finish();
+                }
+            }
+        };
+    }
+
+
+
+    /*private void checkUserExists()
     {
         final String userId = mAuth.getCurrentUser().getUid();
         mDB.addValueEventListener(new ValueEventListener() {
@@ -292,6 +328,20 @@ public class LoginActivity extends AppCompatActivity {
 
             }
         });
+    }*/
+
+    private void updateUI(FirebaseUser user) {
+        mProgressDialog.hide();
+        if (user != null) {
+            Intent menuIntent = new Intent(LoginActivity.this,MenuActivity.class);
+            menuIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(menuIntent);
+            failedCredentials = null;
+            LoginActivity.this.finish();
+        } else {
+            Toast.makeText(LoginActivity.this, "User is null",
+                    Toast.LENGTH_SHORT).show();
+        }
     }
 
     @Override
@@ -306,7 +356,58 @@ public class LoginActivity extends AppCompatActivity {
         finish();
     }
 
-    public void imgFBSignInClicked(View view) {
-        btnFBSignIn.performClick();
+    private void linkProvidersAndSignIn()
+    {
+        mAuth.getCurrentUser().linkWithCredential(failedCredentials).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
+            @Override
+            public void onComplete(@NonNull Task<AuthResult> task) {
+                Toast.makeText(LoginActivity.this, "Accounts linked.",
+                        Toast.LENGTH_SHORT).show();
+                updateUI(mAuth.getCurrentUser());
+            }
+        });
+    }
+
+    private void isProviderRegistered(final AuthCredential credential, final String email, final String providerId)
+    {
+        mAuth.fetchProvidersForEmail(email).addOnCompleteListener(new OnCompleteListener<ProviderQueryResult>() {
+            @Override
+            public void onComplete(@NonNull Task<ProviderQueryResult> task) {
+                final List<String> providers = task.getResult().getProviders();
+                if(providers.size() > 0) {
+                    if (!providers.contains(providerId))
+                    {
+                        new AlertDialog.Builder(LoginActivity.this)
+                                .setTitle("Email already registered.")
+                                .setMessage("Please login using original method to link accounts.")
+                                .setNegativeButton(android.R.string.cancel, null)
+                                .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                                    public void onClick(DialogInterface arg0, int arg1) {
+                                        failedCredentials = credential;
+                                        if(providers.contains(GoogleAuthProvider.PROVIDER_ID)) {
+                                            googleSignIn();
+                                        }
+                                        else if(providers.contains(FacebookAuthProvider.PROVIDER_ID))
+                                        {
+                                            LoginManager.getInstance().logOut();
+                                            btnFBSignIn.performClick();
+                                        }
+                                    }
+                                }).create().show();
+                    }
+                }
+                else
+                {
+                    if(FacebookAuthProvider.PROVIDER_ID.equals(providerId))
+                    {
+                        signInWithFB(credential);
+                    }
+                    else if(GoogleAuthProvider.PROVIDER_ID.equals(providerId))
+                    {
+                        signInWithGoogle(credential);
+                    }
+                }
+            }
+        });
     }
 }

@@ -36,25 +36,12 @@ public class MainActivity extends AppCompatActivity {
 
         mAuth = FirebaseAuth.getInstance();
         mDB = FirebaseDatabase.getInstance().getReference().child("users");
-
-        /*mAuthStateListener = new FirebaseAuth.AuthStateListener() {
-            @Override
-            public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
-                if (firebaseAuth.getCurrentUser() != null) {
-                    Intent menuIntent = new Intent(MainActivity.this, MenuActivity.class);
-                    menuIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                    startActivity(menuIntent);
-                    finish();
-                }
-            }
-        };*/
     }
 
     @Override
     protected void onStart() {
         super.onStart();
         updateUI(mAuth.getCurrentUser());
-        //mAuth.addAuthStateListener(mAuthStateListener);
     }
 
 

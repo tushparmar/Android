@@ -264,41 +264,6 @@ public class LoginActivity extends AppCompatActivity {
                                 linkProvidersAndSignIn();
                             else
                                 updateUI(mAuth.getCurrentUser());
-                        } else {
-                            /*if (task.getException() instanceof FirebaseAuthUserCollisionException) {
-                                mAuth.fetchProvidersForEmail(fbEmail[0])
-                                        .addOnCompleteListener(new OnCompleteListener<ProviderQueryResult>() {
-                                            @Override
-                                            public void onComplete(@NonNull Task<ProviderQueryResult> task) {
-                                                if (task.isSuccessful()) {
-                                                    if (task.getResult().getProviders().contains(
-                                                            EmailAuthProvider.PROVIDER_ID)) {
-                                                        // Password account already exists with the same email.
-                                                        // Ask user to provide password associated with that account.
-                                                        // Sign in with email and the provided password.
-                                                        // If this was a Google account, call signInWithCredential instead.
-                                                        mAuth.signInWithEmailAndPassword(fbEmail[0], fbEmail[0]).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
-                                                            @Override
-                                                            public void onComplete(@NonNull Task<AuthResult> task) {
-                                                                if (task.isSuccessful()) {
-                                                                    // Link initial credential to existing account.
-                                                                    mAuth.getCurrentUser().linkWithCredential(credential);
-                                                                    updateUI(mAuth.getCurrentUser());
-                                                                }
-                                                            }
-                                                        });
-                                                    } else if (task.getResult().getProviders().contains(
-                                                            GoogleAuthProvider.PROVIDER_ID)) {
-                                                        failedCredentials = credential;
-                                                        googleSignIn();
-                                                    }
-                                                }
-                                            }
-                                        });
-                            } else {
-                                Toast.makeText(LoginActivity.this, "Authentication failed.",
-                                        Toast.LENGTH_SHORT).show();
-                            }*/
                         }
                     }
                 });
@@ -328,30 +293,6 @@ public class LoginActivity extends AppCompatActivity {
             }
         };
     }
-
-
-
-    /*private void checkUserExists()
-    {
-        final String userId = mAuth.getCurrentUser().getUid();
-        mDB.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                if(dataSnapshot.hasChild(userId))
-                {
-                    Intent menuIntent = new Intent(LoginActivity.this,MenuActivity.class);
-                    menuIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                    startActivity(menuIntent);
-                    LoginActivity.this.finish();
-                }
-            }
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-
-            }
-        });
-    }*/
 
     private void updateUI(FirebaseUser user) {
         mProgressDialog.hide();

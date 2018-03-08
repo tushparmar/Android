@@ -4,14 +4,13 @@ import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.support.annotation.NonNull;
-import android.support.design.widget.Snackbar;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.TextUtils;
-import android.util.Log;
+import android.text.method.PasswordTransformationMethod;
 import android.view.View;
-import android.view.Window;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -26,32 +25,23 @@ import com.facebook.GraphResponse;
 import com.facebook.login.LoginManager;
 import com.facebook.login.LoginResult;
 import com.facebook.login.widget.LoginButton;
-import com.firebase.ui.auth.AuthUI;
-import com.google.android.gms.auth.api.Auth;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
-import com.google.android.gms.common.SignInButton;
 import com.google.android.gms.common.api.ApiException;
-import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.EmailAuthProvider;
 import com.google.firebase.auth.FacebookAuthProvider;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseAuthUserCollisionException;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
 import com.google.firebase.auth.ProviderQueryResult;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
 
 import org.json.JSONObject;
 
@@ -65,7 +55,7 @@ public class LoginActivity extends AppCompatActivity {
     ImageView imgGSignIn;
     LoginButton btnFBSignIn;
     ImageView imgFBSignIn;
-    Button btnSignIn;
+    Button btnSignUp;
     private static final int RC_SIGN_IN_GOOGLE = 2;
     private static final int RC_SIGN_IN_FB = 3;
     CallbackManager mCallbackManager;
@@ -87,6 +77,7 @@ public class LoginActivity extends AppCompatActivity {
 
         email = findViewById(R.id.userEmail);
         password = findViewById(R.id.userPassword);
+        btnSignUp = findViewById(R.id.btnSignUp);
 
         initGoogleSignIn();
         initFacebookSignIn();
@@ -144,6 +135,12 @@ public class LoginActivity extends AppCompatActivity {
                         linkProvidersAndSignIn();
                     else
                         updateUI(mAuth.getCurrentUser());
+                }
+                else
+                {
+                    mProgressDialog.hide();
+                    Toast.makeText(LoginActivity.this, "Authentication failed. Incorrect Email or Password!!!",
+                            Toast.LENGTH_SHORT).show();
                 }
             }
         });
@@ -220,13 +217,9 @@ public class LoginActivity extends AppCompatActivity {
                         loginResult.getAccessToken(), new GraphRequest.GraphJSONObjectCallback() {
                             @Override
                             public void onCompleted(JSONObject me, GraphResponse response) {
-                                /*if (response.getError() != null) {
-                                } else {*/
                                 fbEmail[0] = me.optString("email");
                                 fbUserId[0] = me.optString("id");
                                 handleFacebookAccessToken(loginResult.getAccessToken(),fbEmail,fbUserId);
-                                //}
-                                System.out.println("######## " + me.toString());
                             }
                         });
                 Bundle parameters = new Bundle();
@@ -346,14 +339,39 @@ public class LoginActivity extends AppCompatActivity {
                                     if(providers.contains(GoogleAuthProvider.PROVIDER_ID)) {
                                         googleSignIn();
                                     }
+                                    else if(providers.contains(EmailAuthProvider.PROVIDER_ID))
+                                    {
+                                        final AlertDialog.Builder alert = new AlertDialog.Builder(LoginActivity.this);
+                                        alert.setTitle("Email login");
+                                        alert.setMessage("Please enter password for \nEmail: "+ email);
+                                        final EditText input = new EditText(LoginActivity.this);
+                                        input.setHint("Password");
+                                        input.setWidth(100);
+                                        input.setTransformationMethod(new PasswordTransformationMethod());
+                                        alert.setView(input);
+                                        alert.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
+                                            @Override
+                                            public void onClick(DialogInterface dialog, int which) {
+                                                failedCredentials = null;
+                                                mProgressDialog.hide();
+                                            }
+                                        });
+                                        alert.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+
+                                            public void onClick(DialogInterface dialog, int whichButton) {
+
+                                                String value = input.getText().toString();
+                                                if (value != null || value != "") {
+                                                    signInWithEmailPass(email, value);
+                                                }
+                                            }
+                                        });
+                                        alert.show();
+                                    }
                                     else if(providers.contains(FacebookAuthProvider.PROVIDER_ID))
                                     {
                                         LoginManager.getInstance().logOut();
                                         btnFBSignIn.performClick();
-                                    }
-                                    else if(providers.contains(EmailAuthProvider.PROVIDER_ID))
-                                    {
-                                        findViewById(R.id.btnSignIn).performClick();
                                     }
                                 }
                             }).create().show();
@@ -367,6 +385,18 @@ public class LoginActivity extends AppCompatActivity {
                     else if(GoogleAuthProvider.PROVIDER_ID.equals(providerId))
                     {
                         signInWithGoogle(credential);
+                    }
+                    else if(EmailAuthProvider.PROVIDER_ID.equals(providerId) && providers.isEmpty())
+                    {
+                        new AlertDialog.Builder(LoginActivity.this)
+                                .setTitle("Email not registered.")
+                                .setMessage("Please SignUp first to sign in.")
+                                .setNegativeButton(android.R.string.cancel, null)
+                                .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                                    public void onClick(DialogInterface arg0, int arg1) {
+                                        txtSignUpClicked(btnSignUp);
+                                    }
+                                }).create().show();
                     }
                     else if(EmailAuthProvider.PROVIDER_ID.equals(providerId))
                     {
